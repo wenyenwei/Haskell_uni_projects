@@ -1,6 +1,6 @@
 # Haskell Uni Projects
-* :writing_hand: Assignment1 - Haskell functions -> `substring`, `interleave`, `unroll`
-* :writing_hand: Project1 - The Musician Game -> Pretty much the same as A1B2, but it's guessing music notes
+* :writing_hand: [Assignment1](https://github.com/wenyenwei/Haskell_uni_projects/blob/master/Assignment1.hs) - Haskell functions -> `substring`, `interleave`, `unroll`
+* :writing_hand: [Project1](https://github.com/wenyenwei/Haskell_uni_projects/blob/master/project1.hs) - The Musician Game -> Pretty much the same as A1B2, but it's guessing music notes
 
 ### Assignment1
 You will implement the following Haskell functions.
