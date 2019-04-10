@@ -42,22 +42,15 @@ countCorrectPitch target (x:xs) = countCorrectPitch target [x] + countCorrectPit
 
 toNote :: [String] -> [Char]
 toNote [] = []
-toNote (x:xs) = head x:toNote xs
+toNote (x:xs) = nub $ head x:toNote xs
 
-countTrue :: [Bool] -> Int
-countTrue [] = 0
-countTrue (x:xs) = if x then 1+countTrue xs else 0+countTrue xs
-
-countCorrectNote :: [String] -> [String] -> Int
-countCorrectNote arr1 arr2 = countTrue (map (`elem` (toNote arr1)) (toNote arr2))
+countCorrect :: [Char] -> [Char] -> Int
+countCorrect _ [] = 0
+countCorrect target (x:xs) = if x `elem` target then 1 + countCorrect target xs else countCorrect target xs
 
 toOctave :: [String] -> [Char]
 toOctave [] = []
 toOctave (x:xs) = nub (tail x ++ toOctave xs)
-
-countCorrectOctave :: [Char] -> [Char] -> Int
-countCorrectOctave _ [] = 0
-countCorrectOctave target (x:xs) = if x `elem` target then 1 + countCorrectOctave target xs else countCorrectOctave target xs
 
 pitchesToStrings :: [Pitch] -> [String]
 pitchesToStrings [] = []
@@ -66,15 +59,16 @@ pitchesToStrings (x:xs) = pitchToString x:pitchesToStrings xs
 pitchToString :: Pitch -> String
 pitchToString (Pitch (Note x) (Octave y)) = x:[y]
 
--- add toPitch to this function
+-- carefully examine this function -> it might be wrong!
 feedback :: [Pitch] -> [Pitch] -> (Int,Int,Int)
 feedback _ [] = (0,0,0)
 feedback [] _ = (0,0,0)
 feedback arr1 arr2 = 
+    if (countCorrectPitch l1 l2) == 3 then (3, 0, 0) else
     (
       countCorrectPitch l1 l2, 
-      countCorrectNote l1 l2 - countCorrectPitch l1 l2, 
-      countCorrectOctave (toOctave l1) (toOctave l2) - countCorrectPitch l1 l2
+      countCorrect (toNote l1) (toNote l2) - countCorrectPitch l1 l2, 
+      countCorrect (toOctave l1) (toOctave l2) - countCorrectPitch l1 l2
     )
     where l1 = pitchesToStrings arr1
           l2 = pitchesToStrings arr2
