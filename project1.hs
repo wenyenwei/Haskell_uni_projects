@@ -36,9 +36,9 @@ toPitch :: String -> Maybe Pitch
 toPitch [] = Nothing
 toPitch [x, y] = if isNote x && isOctave y then Just (Pitch (Note x) (Octave y)) else Nothing
 
-countCorrectPitch :: [String] -> [String] -> Int
-countCorrectPitch target [x] = if x `elem` target then 1 else 0
-countCorrectPitch target (x:xs) = countCorrectPitch target [x] + countCorrectPitch target xs
+getCorrectPitches :: [String] -> [String] -> [String]
+getCorrectPitches target [] = []
+getCorrectPitches target (x:xs) = if x `elem` target then x:getCorrectPitches target xs else getCorrectPitches target xs
 
 toNote :: [String] -> [Char]
 toNote [] = []
@@ -59,19 +59,24 @@ pitchesToStrings (x:xs) = pitchToString x:pitchesToStrings xs
 pitchToString :: Pitch -> String
 pitchToString (Pitch (Note x) (Octave y)) = x:[y]
 
--- carefully examine this function -> it might be wrong!
+removeFromList :: [String] -> [String] -> [String]
+removeFromList target [] = []
+removeFromList target (x:xs) = if x `elem` target then removeFromList target xs else x:removeFromList target xs
+
 feedback :: [Pitch] -> [Pitch] -> (Int,Int,Int)
 feedback _ [] = (0,0,0)
 feedback [] _ = (0,0,0)
 feedback arr1 arr2 = 
-    if (countCorrectPitch l1 l2) == 3 then (3, 0, 0) else
     (
-      countCorrectPitch l1 l2, 
-      countCorrect (toNote l1) (toNote l2) - countCorrectPitch l1 l2, 
-      countCorrect (toOctave l1) (toOctave l2) - countCorrectPitch l1 l2
+      length correctPitches,
+      countCorrect (toNote updatedL1) (toNote updatedL2),
+      countCorrect (toOctave updatedL1) (toOctave updatedL2)
     )
     where l1 = pitchesToStrings arr1
           l2 = pitchesToStrings arr2
+          correctPitches = getCorrectPitches l1 l2
+          updatedL1 = (removeFromList correctPitches l1)
+          updatedL2 = (removeFromList correctPitches l2)
 
 initialGuess :: ([Pitch],GameState)
 initialGuess = ([
