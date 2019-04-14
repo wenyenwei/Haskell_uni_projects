@@ -108,9 +108,9 @@ removeDup input (x:xs) = if x `elem` input then removeDup input xs else x:remove
 
 handleAfterTwoZeroZero :: [Pitch] -> [Pitch] -> (Int, Int, Int) -> [Pitch]
 handleAfterTwoZeroZero input prevInput feedbackInput
-  | isOne && (length getSame == 2) = removeDup input prevInput
+  -- | isOne && (length getSame == 2) = removeDup input prevInput
   | isOne && (length getSame == 1) = getSame
-  | isTwo && ((length $ getSame) > 0) = getSame
+  -- | isTwo && ((length $ getSame) > 0) = getSame
   | otherwise = []
   where getSame = getSamePitches input prevInput
         isOne = fst3 feedbackInput == 1
