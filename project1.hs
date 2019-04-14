@@ -5,7 +5,7 @@ import Data.List
 data Note = Note Char deriving (Show, Eq, Read)
 data Octave = Octave Char deriving (Show, Eq, Read)
 data Pitch = Pitch Note Octave deriving (Show, Eq, Read)
-type GameState = ([[Pitch]],[Pitch], Bool, [Pitch], [Pitch])
+type GameState = ([[Pitch]],[Pitch])
 
 pitchList :: [Pitch]
 pitchList = makePitchList ['A'..'G'] ['1'..'3']
@@ -59,10 +59,6 @@ pitchesToStrings (x:xs) = pitchToString x:pitchesToStrings xs
 pitchToString :: Pitch -> String
 pitchToString (Pitch (Note x) (Octave y)) = x:[y]
 
-removeFromList :: [String] -> [String] -> [String]
-removeFromList target [] = []
-removeFromList target (x:xs) = if x `elem` target then removeFromList target xs else x:removeFromList target xs
-
 feedback :: [Pitch] -> [Pitch] -> (Int,Int,Int)
 feedback _ [] = (0,0,0)
 feedback [] _ = (0,0,0)
@@ -79,85 +75,18 @@ feedback arr1 arr2 =
           updatedL2 = (removeFromList correctPitches l2)
 
 initialGuess :: ([Pitch],GameState)
-initialGuess = (initG, (getPitchList,[], False, initG, []))
-  where initG = [Pitch (Note 'A') (Octave '1'), Pitch (Note 'A') (Octave '2'), Pitch (Note 'A') (Octave '3')]
-
-getUpdatedRemoveList :: [Pitch] -> [Pitch] -> [Pitch] -> (Int, Int, Int) -> [Pitch]
-getUpdatedRemoveList input removeList correctList (_, y, z)
-  | qualified = nub (removeList ++ toRemovePitch)
-  | otherwise = removeList
-  where toRemovePitch = removeDup correctList input
-        qualified = length toRemovePitch < 3
-  
-getUpdatedRemoveListZero :: [Pitch] -> [Pitch] -> (Int, Int, Int) -> [Pitch]
-getUpdatedRemoveListZero input removeList feedbackInput = 
-  case feedbackInput of (0, 0, 0) -> nub (removeList ++ (handleTripleZeroCase input))
-                        (0, 0, _) -> nub (removeList ++ (handleZeroNote input))
-                        (0, _, 0) -> nub (removeList ++ (handleZeroOctave input))
-                        (0, _, _) -> nub (removeList ++ input)
-                        feedbackInput -> removeList
-
-getSamePitches :: [Pitch] -> [Pitch] -> [Pitch]
-getSamePitches [] _ = []
-getSamePitches (x:xs) prevInput = 
-  if x `elem` prevInput then x:getSamePitches xs prevInput else getSamePitches xs prevInput
-
-removeDup :: [Pitch] -> [Pitch] -> [Pitch]
-removeDup _ [] = []
-removeDup input (x:xs) = if x `elem` input then removeDup input xs else x:removeDup input xs
-
-handleAfterTwoZeroZero :: [Pitch] -> [Pitch] -> (Int, Int, Int) -> [Pitch]
-handleAfterTwoZeroZero input prevInput feedbackInput
-  -- | isOne && (length getSame == 2) = removeDup input prevInput
-  | isOne && (length getSame == 1) = getSame
-  -- | isTwo && ((length $ getSame) > 0) = getSame
-  | otherwise = []
-  where getSame = getSamePitches input prevInput
-        isOne = fst3 feedbackInput == 1
-        isTwo = fst3 feedbackInput == 2
-
-fst3 :: (a, b, c) -> a
-fst3 (x, _, _) = x
+initialGuess = ([
+  (Pitch (Note 'A') (Octave '1')), 
+  (Pitch (Note 'A') (Octave '2')), 
+  (Pitch (Note 'A') (Octave '3'))], (getPitchList,[]))
 
 nextGuess :: ([Pitch],GameState) -> (Int,Int,Int) -> ([Pitch],GameState)
-nextGuess (input, (arr, removeList, previs2xx, prevInput, correctList)) feedbackInput = 
-    let separateHandle = length correctList == fst3 feedbackInput && length correctList > 0
-        updatedRemoveList = if separateHandle 
-          then getUpdatedRemoveList input removeList correctList feedbackInput
-          else getUpdatedRemoveListZero input removeList feedbackInput
-        is2xx = fst3 feedbackInput == 2
-        updatedCorrectList = if previs2xx then 
-          nub $ handleAfterTwoZeroZero input prevInput feedbackInput ++ correctList
-          else correctList
-        updatedArr = jumpToNonRemovePitch arr updatedRemoveList correctList
-    in ((head updatedArr), ((tail updatedArr), updatedRemoveList, is2xx, input, updatedCorrectList))
+nextGuess (input, (arr, removeList)) feedbackInput =
+  let updatedArr = jumpToNonRemovePitch arr input feedbackInput
+  in ((head updatedArr), ((tail updatedArr), removeList))
 
-jumpToNonRemovePitch :: [[Pitch]] -> [Pitch] -> [Pitch] -> [[Pitch]]
-jumpToNonRemovePitch arr rm cor = 
-  if all (==False) (map (`elem` (head arr)) rm) 
-    && all (==True) (map (`elem` (head arr)) cor) 
+jumpToNonRemovePitch :: [[Pitch]] -> [Pitch] -> (Int, Int, Int) -> [[Pitch]]
+jumpToNonRemovePitch arr input feedbackInput = 
+  if feedback input (head arr) == feedbackInput 
     then arr 
-    else jumpToNonRemovePitch (tail arr) rm cor
-
-
--- can prob merge these to one
-handleTripleZeroCase :: [Pitch] -> [Pitch]
-handleTripleZeroCase [] = []
-handleTripleZeroCase (x:xs) = nub (generateRemoveItems x ++ handleTripleZeroCase xs)
-
-handleZeroNote :: [Pitch] -> [Pitch]
-handleZeroNote [] = []
-handleZeroNote (x:xs) = generateRemoveItemsByNote x ++ handleZeroNote xs
-
-handleZeroOctave :: [Pitch] -> [Pitch]
-handleZeroOctave [] = []
-handleZeroOctave (x:xs) = generateRemoveItemsByOctave x ++ handleZeroOctave xs
-
-generateRemoveItemsByNote :: Pitch -> [Pitch]
-generateRemoveItemsByNote (Pitch (Note n) _) = nub ((makePitchList [n] []))
-
-generateRemoveItemsByOctave :: Pitch -> [Pitch]
-generateRemoveItemsByOctave (Pitch _ (Octave o)) = nub ((makePitchList [] [o]))
-
-generateRemoveItems :: Pitch -> [Pitch]
-generateRemoveItems (Pitch (Note n) (Octave o)) = nub ((makePitchList [n] []) ++ (makePitchList [] [o]))
+    else jumpToNonRemovePitch (tail arr) input feedbackInput
