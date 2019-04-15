@@ -15,12 +15,10 @@ module Proj1 (Pitch, toPitch, feedback,
 GameState, initialGuess, nextGuess) where
 
 import Data.List 
-data Pitch = Pitch {note :: Char, octave :: Char}
+data Pitch = Pitch {note :: Char, octave :: Char} deriving (Eq)
 instance Show Pitch where
   show Pitch {note = x, octave = y} = [x,y]
-instance Eq Pitch where
-  Pitch {note = x, octave = y} == Pitch {note = a, octave = b} = True
-  _ == _ = False
+
 -- GameState is a list of remaining 3-Pitche combinations
 type GameState = ([[Pitch]])
 
@@ -46,8 +44,9 @@ getPitchList :: [[Pitch]]
 getPitchList = combinations 3 pitchList
 
 
--- "isNote", "isOctave", "toNote", "toOctave" are functions to validate/
--- transform pitches these are support functions for "feedback" function
+-- "getNote", "getOctave", "isNote", "isOctave", "toNote", "toOctave"
+-- are functions to validate/transform pitches as support functions 
+-- for "feedback" function
 
 getNote :: Pitch -> Char
 getNote (Pitch {note = x, octave = y}) = x
@@ -95,15 +94,7 @@ countCorrect (t:ts) arr = if t `elem` arr
   then 1 + countCorrect ts (removeItemFromArr t arr)
   else countCorrect ts arr
 
--- "pitchesToStrings", "pitchToString", "removeFromList" are support 
--- functions for "feedback" function
-
-pitchesToStrings :: [Pitch] -> [String]
-pitchesToStrings [] = []
-pitchesToStrings (x:xs) = pitchToString x:pitchesToStrings xs
-
-pitchToString :: Pitch -> String
-pitchToString (Pitch x y) = x:[y]
+-- "removeFromList" is a support functions for "feedback" function
 
 removeFromList :: [Pitch] -> [Pitch] -> [Pitch]
 removeFromList target [] = []
@@ -119,15 +110,13 @@ removeFromList target (x:xs) =
 feedback :: [Pitch] -> [Pitch] -> (Int,Int,Int)
 feedback _ [] = (0,0,0)
 feedback [] _ = (0,0,0)
-feedback arr1 arr2 = 
+feedback l1 l2 = 
     (
       length correctPitches,
       countCorrect (toNote updatedL1) (toNote updatedL2),
       countCorrect (toOctave updatedL1) (toOctave updatedL2)
     )
-    where l1 = arr1
-          l2 = arr2
-          correctPitches = getCorrectPitches l1 l2
+    where correctPitches = getCorrectPitches l1 l2
           updatedL1 = (removeFromList correctPitches l1)
           updatedL2 = (removeFromList correctPitches l2)
 
