@@ -18,6 +18,9 @@ import Data.List
 data Pitch = Pitch {note :: Char, octave :: Char}
 instance Show Pitch where
   show Pitch {note = x, octave = y} = [x,y]
+instance Eq Pitch where
+  Pitch {note = x, octave = y} == Pitch {note = a, octave = b} = True
+  _ == _ = False
 -- GameState is a list of remaining 3-Pitche combinations
 type GameState = ([[Pitch]])
 
@@ -46,6 +49,12 @@ getPitchList = combinations 3 pitchList
 -- "isNote", "isOctave", "toNote", "toOctave" are functions to validate/
 -- transform pitches these are support functions for "feedback" function
 
+getNote :: Pitch -> Char
+getNote (Pitch {note = x, octave = y}) = x
+
+getOctave :: Pitch -> Char
+getOctave (Pitch {note = x, octave = y}) = y
+
 isNote :: Char -> Bool
 isNote x = 
   x == 'A' || x == 'B' || x == 'C' || x == 'D' 
@@ -54,32 +63,37 @@ isNote x =
 isOctave :: Char -> Bool
 isOctave x = x == '1' || x == '2' || x == '3'
 
-toNote :: [String] -> [Char]
+toNote :: [Pitch] -> [Char]
 toNote [] = []
-toNote (x:xs) = nub $ head x:toNote xs
+toNote (x:xs) = getNote x:toNote xs
 
-toOctave :: [String] -> [Char]
+toOctave :: [Pitch] -> [Char]
 toOctave [] = []
-toOctave (x:xs) = nub (tail x ++ toOctave xs)
+toOctave (x:xs) = getOctave x:toOctave xs
 
 -- "getCorrectPitches", "countCorrect", counts the correct Pitches/Note/Octave
 -- of a Pitch combination. These are support functions for "feedback" function 
 
 -- "getCorrectPitches" count the common pitches between the target and guess
-getCorrectPitches :: [String] -> [String] -> [String]
+getCorrectPitches :: [Pitch] -> [Pitch] -> [Pitch]
 getCorrectPitches target [] = []
 getCorrectPitches target (x:xs) = 
   if x `elem` target 
     then x:getCorrectPitches target xs 
     else getCorrectPitches target xs
 
+removeItemFromArr :: Char -> [Char] -> [Char]
+removeItemFromArr item [] = []
+removeItemFromArr item (x:xs) = if x == item 
+  then xs else x:removeItemFromArr item xs
+
 -- "countCorrect" count the common Notes/Octaves between the target and guess
 countCorrect :: [Char] -> [Char] -> Int
 countCorrect _ [] = 0
-countCorrect target (x:xs) = 
-  if x `elem` target 
-    then 1 + countCorrect target xs 
-    else countCorrect target xs
+countCorrect [] _ = 0
+countCorrect (t:ts) arr = if t `elem` arr 
+  then 1 + countCorrect ts (removeItemFromArr t arr)
+  else countCorrect ts arr
 
 -- "pitchesToStrings", "pitchToString", "removeFromList" are support 
 -- functions for "feedback" function
@@ -91,7 +105,7 @@ pitchesToStrings (x:xs) = pitchToString x:pitchesToStrings xs
 pitchToString :: Pitch -> String
 pitchToString (Pitch x y) = x:[y]
 
-removeFromList :: [String] -> [String] -> [String]
+removeFromList :: [Pitch] -> [Pitch] -> [Pitch]
 removeFromList target [] = []
 removeFromList target (x:xs) = 
   if x `elem` target 
@@ -111,8 +125,8 @@ feedback arr1 arr2 =
       countCorrect (toNote updatedL1) (toNote updatedL2),
       countCorrect (toOctave updatedL1) (toOctave updatedL2)
     )
-    where l1 = pitchesToStrings arr1
-          l2 = pitchesToStrings arr2
+    where l1 = arr1
+          l2 = arr2
           correctPitches = getCorrectPitches l1 l2
           updatedL1 = (removeFromList correctPitches l1)
           updatedL2 = (removeFromList correctPitches l2)
