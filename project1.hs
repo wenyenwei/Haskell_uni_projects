@@ -15,22 +15,22 @@ module Proj1 (Pitch, toPitch, feedback,
 GameState, initialGuess, nextGuess) where
 
 import Data.List 
-data Note = Note Char deriving (Show, Eq, Read)
-data Octave = Octave Char deriving (Show, Eq, Read)
-data Pitch = Pitch Note Octave deriving (Show, Eq, Read)
+data Pitch = Pitch {note :: Char, octave :: Char}
+instance Show Pitch where
+  show Pitch {note = x, octave = y} = [x,y]
 -- GameState is a list of remaining 3-Pitche combinations
 type GameState = ([[Pitch]])
 
 toPitch :: String -> Maybe Pitch
 toPitch [] = Nothing
 toPitch [x, y] = if isNote x && isOctave y 
-  then Just (Pitch (Note x) (Octave y)) else Nothing
+  then Just Pitch {note = x, octave = y} else Nothing
 
 -- "pitchList", "combinations", "getPitchList" are all functions/supporting
 -- functions for generating pitch combinations from A1 ... G3
 
 pitchList :: [Pitch]
-pitchList = [Pitch (Note x) (Octave y) | x <- ['A'..'G'], y <- ['1'..'3']]
+pitchList = [Pitch x y | x <- ['A'..'G'], y <- ['1'..'3']]
 
 combinations :: (Eq t, Num t) => t -> [a] -> [[a]]
 combinations 0 arr = [[]]
@@ -89,7 +89,7 @@ pitchesToStrings [] = []
 pitchesToStrings (x:xs) = pitchToString x:pitchesToStrings xs
 
 pitchToString :: Pitch -> String
-pitchToString (Pitch (Note x) (Octave y)) = x:[y]
+pitchToString (Pitch x y) = x:[y]
 
 removeFromList :: [String] -> [String] -> [String]
 removeFromList target [] = []
@@ -119,9 +119,9 @@ feedback arr1 arr2 =
 
 initialGuess :: ([Pitch],GameState)
 initialGuess = ([
-  (Pitch (Note 'A') (Octave '1')), 
-  (Pitch (Note 'A') (Octave '2')), 
-  (Pitch (Note 'A') (Octave '3'))], getPitchList)
+  Pitch 'A' '1', 
+  Pitch 'A' '2', 
+  Pitch 'A' '3'], getPitchList)
 
 nextGuess :: ([Pitch],GameState) -> (Int,Int,Int) -> ([Pitch],GameState)
 nextGuess (input, arr) feedbackInput =
