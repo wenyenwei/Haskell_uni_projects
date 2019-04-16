@@ -15,6 +15,7 @@ module Proj1 (Pitch, toPitch, feedback,
 GameState, initialGuess, nextGuess) where
 
 import Data.List 
+
 data Pitch = Pitch {note :: Char, octave :: Char} deriving (Eq)
 instance Show Pitch where
   show Pitch {note = x, octave = y} = [x,y]
@@ -27,12 +28,12 @@ toPitch [] = Nothing
 toPitch [x, y] = if isNote x && isOctave y 
   then Just Pitch {note = x, octave = y} else Nothing
 
--- "pitchList", "combinations", "getPitchList" are all functions/supporting
--- functions for generating pitch combinations from A1 ... G3
-
+-- "pitchList" creates all the pitches from A1 ... G3
 pitchList :: [Pitch]
 pitchList = [Pitch x y | x <- ['A'..'G'], y <- ['1'..'3']]
 
+-- "combinations" make combinations from a list of a certain number.
+-- e.g. combinations 2 [1,2,3] = [[1,2],[2,3],[1,3]]
 combinations :: (Eq t, Num t) => t -> [a] -> [[a]]
 combinations 0 arr = [[]]
 combinations n arr = do
@@ -40,20 +41,21 @@ combinations n arr = do
     remain   <- combinations (n-1) xs
     return ([x] ++ remain)
 
+-- "getPitchList" use "pitchList" and "combinations" to create all 1330 
+-- Pitch combinations
 getPitchList :: [[Pitch]]
 getPitchList = combinations 3 pitchList
 
-
--- "getNote", "getOctave", "isNote", "isOctave", "toNote", "toOctave"
--- are functions to validate/transform pitches as support functions 
--- for "feedback" function
-
+-- "getNote", "getOctave" are getter functions for data type Pitch 
+-- to get Note/Octave from Pitch
 getNote :: Pitch -> Char
 getNote (Pitch {note = x, octave = y}) = x
 
 getOctave :: Pitch -> Char
 getOctave (Pitch {note = x, octave = y}) = y
 
+
+-- "isNote", "isOctave" validate a Char is a valid Note/Octave
 isNote :: Char -> Bool
 isNote x = 
   x == 'A' || x == 'B' || x == 'C' || x == 'D' 
@@ -62,6 +64,7 @@ isNote x =
 isOctave :: Char -> Bool
 isOctave x = x == '1' || x == '2' || x == '3'
 
+-- "toNote", "toOctave" transform a list of Pitches to a list of Note/Octave
 toNote :: [Pitch] -> [Char]
 toNote [] = []
 toNote (x:xs) = getNote x:toNote xs
@@ -69,9 +72,6 @@ toNote (x:xs) = getNote x:toNote xs
 toOctave :: [Pitch] -> [Char]
 toOctave [] = []
 toOctave (x:xs) = getOctave x:toOctave xs
-
--- "getCorrectPitches", "countCorrect", counts the correct Pitches/Note/Octave
--- of a Pitch combination. These are support functions for "feedback" function 
 
 -- "getCorrectPitches" count the common pitches between the target and guess
 getCorrectPitches :: [Pitch] -> [Pitch] -> [Pitch]
@@ -81,11 +81,6 @@ getCorrectPitches target (x:xs) =
     then x:getCorrectPitches target xs 
     else getCorrectPitches target xs
 
-removeItemFromArr :: Char -> [Char] -> [Char]
-removeItemFromArr item [] = []
-removeItemFromArr item (x:xs) = if x == item 
-  then xs else x:removeItemFromArr item xs
-
 -- "countCorrect" count the common Notes/Octaves between the target and guess
 countCorrect :: [Char] -> [Char] -> Int
 countCorrect _ [] = 0
@@ -94,14 +89,20 @@ countCorrect (t:ts) arr = if t `elem` arr
   then 1 + countCorrect ts (removeItemFromArr t arr)
   else countCorrect ts arr
 
--- "removeFromList" is a support functions for "feedback" function
-
+-- "removeFromList" and "removeItemFromArr" are support functions for "feedback" function
+-- if input contains element in target, remove the element from input
 removeFromList :: [Pitch] -> [Pitch] -> [Pitch]
 removeFromList target [] = []
 removeFromList target (x:xs) = 
   if x `elem` target 
     then removeFromList target xs 
     else x:removeFromList target xs
+
+-- "removeItemFromArr" removes a single target item from an array
+removeItemFromArr :: Char -> [Char] -> [Char]
+removeItemFromArr item [] = []
+removeItemFromArr item (x:xs) = if x == item 
+  then xs else x:removeItemFromArr item xs
 
 -- "feedback" first use "getCorrectPitches" function and then remove the 
 -- correct pitches from the list as shown in updateL1/updateL2.
@@ -123,19 +124,19 @@ feedback l1 l2 =
 initialGuess :: ([Pitch],GameState)
 initialGuess = ([
   Pitch 'A' '1', 
-  Pitch 'A' '2', 
-  Pitch 'A' '3'], getPitchList)
+  Pitch 'B' '2', 
+  Pitch 'C' '3'], getPitchList)
 
 nextGuess :: ([Pitch],GameState) -> (Int,Int,Int) -> ([Pitch],GameState)
 nextGuess (input, arr) feedbackInput =
-  let updatedArr = jumpToNonRemovePitch arr input feedbackInput
+  let updatedArr = filterPitch arr input feedbackInput
   in ((head updatedArr), (tail updatedArr))
 
--- the strategy of "jumpToNonRemovePitch" is to remove symmetry in the 
+-- the strategy of "filterPitch" is to remove symmetry in the 
 -- problem space.
 
-jumpToNonRemovePitch :: [[Pitch]] -> [Pitch] -> (Int, Int, Int) -> [[Pitch]]
-jumpToNonRemovePitch arr input feedbackInput = 
-  if feedback input (head arr) == feedbackInput 
-    then arr 
-    else jumpToNonRemovePitch (tail arr) input feedbackInput
+filterPitch :: [[Pitch]] -> [Pitch] -> (Int, Int, Int) -> [[Pitch]]
+filterPitch [] _ _ = []
+filterPitch (x:xs) input feedbackInput = if (feedback input x == feedbackInput) 
+  then x:filterPitch xs input feedbackInput
+  else filterPitch xs input feedbackInput
