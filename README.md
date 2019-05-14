@@ -1,6 +1,10 @@
-# Haskell Uni Projects
+# Declarative Programming Projects
+## Haskell
 * :writing_hand: [Assignment1](https://github.com/wenyenwei/Haskell_uni_projects/blob/master/Assignment1.hs) - Haskell functions -> `substring`, `interleave`, `unroll`
 * :writing_hand: [Project1](https://github.com/wenyenwei/Haskell_uni_projects/blob/master/project1.hs) - The Musician Game -> Pretty much the same as A1B2, but it's guessing music notes
+
+## Prolog
+* :writing_hand: [Project2](https://github.com/wenyenwei/Haskell_uni_projects/blob/master/proj2.hs) - The Math Puzzle -> Fill in puzzle with math constraints
 
 ### Assignment1
 You will implement the following Haskell functions.
